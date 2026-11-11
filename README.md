@@ -25,8 +25,8 @@ Grab the portable build from [Releases](https://github.com/breachato/crashbash-p
 
 | Build | File | Runs on |
 | --- | --- | --- |
-| 64 bit | `Crash Bash 1.0.0 win32-x64.zip` | Windows 7 SP1+ 64 bit |
-| 32 bit | `Crash Bash 1.0.0 win32-ia32.zip` | Windows 7 SP1+ 32 bit |
+| 64 bit | `crashbash-player-1.0.0-win32-x64.zip` | Windows 7 SP1+ 64 bit |
+| 32 bit | `crashbash-player-1.0.0-win32-ia32.zip` | Windows 7 SP1+ 32 bit |
 
 Unzip it anywhere and run `Crash Bash.exe`. Nothing to install, no registry keys, no administrator prompt. Settings, session and cache live in the app's data folder (`%APPDATA%`), the log in `player.log` next to them.
 
