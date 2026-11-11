@@ -60,8 +60,11 @@ Dalla cartella della build:
 "Crash Bash.exe" --smoke        # verifica che il gioco si carichi, poi esce
 "Crash Bash.exe" --check-ui     # stampa misure di gioco e barra, poi esce
 "Crash Bash.exe" --check-audio  # stampa le impostazioni salvate, poi esce
+"Crash Bash.exe" --check-gpu    # dice quale renderer usa il gioco, poi esce
 "Crash Bash.exe" --shot         # salva uno screenshot in shot.png, poi esce
 ```
+
+`--check-gpu` riporta il renderer reale (`renderer` e `vendor`), se WebGL2 è disponibile, la scheda e il driver riconosciuti e un esito in chiaro: **accelerazione hardware** oppure **fallback software attivo** (SwiftShader). Su un PC senza driver compare il fallback software, ed è quello che tiene in piedi il gioco anche senza accelerazione.
 
 Log in `%APPDATA%\Crash Bash\player.log`, dati e cache nella stessa cartella.
 

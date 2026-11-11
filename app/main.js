@@ -15,8 +15,9 @@ const BAR_HEIGHT = 54;
 const SMOKE = process.argv.includes('--smoke');
 const CHECK_AUDIO = process.argv.includes('--check-audio');
 const CHECK_UI = process.argv.includes('--check-ui');
+const CHECK_GPU = process.argv.includes('--check-gpu');
 const SHOT = process.argv.includes('--shot');
-const TEST_MODE = SMOKE || CHECK_AUDIO || CHECK_UI || SHOT;
+const TEST_MODE = SMOKE || CHECK_AUDIO || CHECK_UI || CHECK_GPU || SHOT;
 
 // Crash Bash e' una web app (WebGL2 + WebAssembly) e gli asset arrivano dal suo
 // server: questo contenitore serve solo a darle una finestra nativa su Windows 7.
@@ -136,6 +137,31 @@ const PROBE =
   'help:q("#help"),status:q("#status"),result:q("#result"),toast:q("#toast"),' +
   'brand:q("#brand"),copy:q("#copy"),footer:q("footer"),chrome:q("#chrome")})';
 
+// el-check-gpu: quale renderer sta usando davvero il gioco. Serve a capire se su
+// un PC senza driver si sta appoggiando al fallback software (SwiftShader).
+const GPU_PROBE =
+  'JSON.stringify((function(){' +
+  'var out={};' +
+  'var c=document.createElement("canvas");' +
+  'var gl=c.getContext("webgl2")||c.getContext("webgl");' +
+  'out.gl=!!gl;' +
+  'out.webgl2=!!(gl&&typeof WebGL2RenderingContext!=="undefined"&&' +
+  'gl instanceof WebGL2RenderingContext);' +
+  'if(gl){var ext=gl.getExtension("WEBGL_debug_renderer_info");' +
+  'if(ext){out.vendor=gl.getParameter(ext.UNMASKED_VENDOR_WEBGL);' +
+  'out.renderer=gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);}' +
+  'else{out.vendor=gl.getParameter(gl.VENDOR);out.renderer=gl.getParameter(gl.RENDERER);}' +
+  'out.maxTexture=gl.getParameter(gl.MAX_TEXTURE_SIZE);}' +
+  'var r=String(out.renderer||"").toLowerCase();' +
+  'out.software=/swiftshader|software|llvmpipe|basic render/.test(r);' +
+  'return out;})())';
+
+function gpuSummary(page) {
+  if (!page.gl) return 'WebGL non disponibile: il gioco non puo` renderizzare';
+  if (page.software) return 'fallback software attivo (' + page.renderer + ')';
+  return 'accelerazione hardware (' + page.renderer + ')';
+}
+
 // in modalita' diagnostica non si prende il lock: l'app puo' restare aperta
 if (!TEST_MODE && !app.requestSingleInstanceLock()) {
   app.quit();
@@ -219,6 +245,52 @@ if (!TEST_MODE && !app.requestSingleInstanceLock()) {
               app.exit(1);
             });
         }, 7000);
+      });
+    }
+
+    if (CHECK_GPU) {
+      const timer = setTimeout(() => {
+        log('check-gpu: timeout');
+        app.exit(2);
+      }, 60000);
+      window.webContents.once('did-finish-load', () => {
+        setTimeout(() => {
+          Promise.all([window.webContents.executeJavaScript(GPU_PROBE), app.getGPUInfo('basic')])
+            .then((results) => {
+              const page = JSON.parse(results[0]);
+              const info = results[1] || {};
+              const device = (info.gpuDevice && info.gpuDevice[0]) || {};
+              const features = app.getGPUFeatureStatus();
+              clearTimeout(timer);
+              const report = {
+                    renderer: page.renderer || null,
+                    vendor: page.vendor || null,
+                    webgl: page.gl,
+                    webgl2: page.webgl2,
+                    maxTexture: page.maxTexture || null,
+                    software: page.software,
+                    scheda: device.vendorString && device.deviceString
+                      ? device.vendorString + ' ' + device.deviceString
+                      : null,
+                    driver: device.driverVendor && device.driverVersion
+                      ? device.driverVendor + ' ' + device.driverVersion
+                      : null,
+                    features: features,
+                    esito: gpuSummary(page),
+              };
+              // i campi che il sistema non espone non vanno stampati come null
+              Object.keys(report).forEach((key) => {
+                if (report[key] === null) delete report[key];
+              });
+              log('check-gpu: ' + JSON.stringify(report));
+              app.exit(0);
+            })
+            .catch((error) => {
+              clearTimeout(timer);
+              log('check-gpu errore: ' + error.message);
+              app.exit(1);
+            });
+        }, 6000);
       });
     }
 
