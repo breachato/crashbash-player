@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag the builds are attached to
+        required: true
+        default: v1.0.0
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, ia32]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Electron
+        shell: pwsh
+        run: |
+          $version = '22.3.27'
+          $zip = "electron-v$version-win32-${{ matrix.arch }}.zip"
+          Invoke-WebRequest -Uri "https://github.com/electron/electron/releases/download/v$version/$zip" -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath electron
+
+      - name: Build the portable folder
+        shell: pwsh
+        run: |
+          $out = "Crash Bash-win32-${{ matrix.arch }}"
+          New-Item -ItemType Directory -Path "$out/resources/app" -Force | Out-Null
+          Copy-Item -Path "electron/*" -Destination $out -Recurse -Force
+          Copy-Item -Path app/main.js, app/preload.js, app/offline.html, app/package.json -Destination "$out/resources/app"
+          Move-Item -Path "$out/electron.exe" -Destination "$out/Crash Bash.exe"
+          Remove-Item -Path "$out/resources/default_app.asar" -ErrorAction SilentlyContinue
+          Get-ChildItem -Path "$out/locales" |
+            Where-Object { $_.Name -notin @('it.pak', 'en-US.pak') } |
+            Remove-Item
+          Compress-Archive -Path $out -DestinationPath "crashbash-player-1.0.0-win32-${{ matrix.arch }}.zip"
+
+      - name: Check the executable
+        shell: pwsh
+        run: |
+          $exe = "Crash Bash-win32-${{ matrix.arch }}\Crash Bash.exe"
+          $version = & $exe --version 2>$null
+          Write-Host "electron: $version"
+          Write-Host "files: $((Get-ChildItem "Crash Bash-win32-${{ matrix.arch }}" -Recurse -File).Count)"
+
+      - name: Upload to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Crash Bash Player 1.0.0
+          files: crashbash-player-1.0.0-win32-${{ matrix.arch }}.zip
+          fail_on_unmatched_files: true
