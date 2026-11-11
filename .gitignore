@@ -1,0 +1,17 @@
+# Output di build e archivi portatili
+/dist/
+*.zip
+*.7z
+
+# Dipendenze
+node_modules/
+__pycache__/
+
+# Artwork di terzi: Crash Bandicoot e le icone sono dei rispettivi proprietari
+app/icon.ico
+app/icon.png
+app/icon-512.png
+
+# Log e scarti
+*.log
+shot.png

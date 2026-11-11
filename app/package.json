@@ -1,0 +1,12 @@
+{
+  "name": "crash-bash-player",
+  "productName": "Crash Bash",
+  "version": "1.0.0",
+  "description": "Player portatile per Crash Bash Online, compatibile con Windows 7",
+  "main": "main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "22.3.27"
+  }
+}
