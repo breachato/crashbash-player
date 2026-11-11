@@ -82,7 +82,7 @@ Diagnostic runs do not take the single-instance lock, so the player can stay ope
 | `app/preload.js` | Settings applied before the game starts, game-only CSS, Italian command bar |
 | `app/offline.html` | Local page shown when the network is missing |
 | `app/package.json` | Electron version and app metadata |
-| `.github/workflows/` | Release build (when present) |
+| `.github/workflows/release.yml` | Release build: portable zips for both architectures, attached to the release |
 
 ## Notes
 
